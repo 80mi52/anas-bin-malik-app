@@ -1,0 +1,54 @@
+মাদ্রাসা আনাস বিন মালেক — নিরাপদ প্রাথমিক RLS নীতি
+
+গুরুত্বপূর্ণ:
+- এই SQL কেবল authenticated ব্যবহারকারীকে students/attendance টেবিলে কাজ করতে দেবে।
+- অ্যাপের লগইন করা অ্যাডমিন অ্যাকাউন্ট ব্যবহার করুন। Supabase Authentication সেটিংসে নতুন public sign-up বন্ধ করুন, যাতে অপরিচিত কেউ অ্যাকাউন্ট খুলতে না পারে।
+- SQL চালানোর আগে নিশ্চিত করুন অ্যাডমিন ইউজার তৈরি আছে।
+- student-photos bucket private থাকতে হবে।
+
+Supabase → SQL Editor-এ পুরো কোডটি পেস্ট করে Run করুন:
+
+-- Tables: authenticated users only
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teacher_attendance ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "admin_auth_students_select" ON public.students;
+DROP POLICY IF EXISTS "admin_auth_students_insert" ON public.students;
+DROP POLICY IF EXISTS "admin_auth_students_update" ON public.students;
+DROP POLICY IF EXISTS "admin_auth_students_delete" ON public.students;
+CREATE POLICY "admin_auth_students_select" ON public.students FOR SELECT TO authenticated USING (true);
+CREATE POLICY "admin_auth_students_insert" ON public.students FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "admin_auth_students_update" ON public.students FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "admin_auth_students_delete" ON public.students FOR DELETE TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "admin_auth_student_attendance_select" ON public.student_attendance;
+DROP POLICY IF EXISTS "admin_auth_student_attendance_insert" ON public.student_attendance;
+DROP POLICY IF EXISTS "admin_auth_student_attendance_update" ON public.student_attendance;
+DROP POLICY IF EXISTS "admin_auth_student_attendance_delete" ON public.student_attendance;
+CREATE POLICY "admin_auth_student_attendance_select" ON public.student_attendance FOR SELECT TO authenticated USING (true);
+CREATE POLICY "admin_auth_student_attendance_insert" ON public.student_attendance FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "admin_auth_student_attendance_update" ON public.student_attendance FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "admin_auth_student_attendance_delete" ON public.student_attendance FOR DELETE TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "admin_auth_teacher_attendance_select" ON public.teacher_attendance;
+DROP POLICY IF EXISTS "admin_auth_teacher_attendance_insert" ON public.teacher_attendance;
+DROP POLICY IF EXISTS "admin_auth_teacher_attendance_update" ON public.teacher_attendance;
+DROP POLICY IF EXISTS "admin_auth_teacher_attendance_delete" ON public.teacher_attendance;
+CREATE POLICY "admin_auth_teacher_attendance_select" ON public.teacher_attendance FOR SELECT TO authenticated USING (true);
+CREATE POLICY "admin_auth_teacher_attendance_insert" ON public.teacher_attendance FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "admin_auth_teacher_attendance_update" ON public.teacher_attendance FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "admin_auth_teacher_attendance_delete" ON public.teacher_attendance FOR DELETE TO authenticated USING (true);
+
+-- Private student photo storage: authenticated users only
+UPDATE storage.buckets SET public = false WHERE id = 'student-photos';
+DROP POLICY IF EXISTS "admin_auth_student_photos_select" ON storage.objects;
+DROP POLICY IF EXISTS "admin_auth_student_photos_insert" ON storage.objects;
+DROP POLICY IF EXISTS "admin_auth_student_photos_update" ON storage.objects;
+DROP POLICY IF EXISTS "admin_auth_student_photos_delete" ON storage.objects;
+CREATE POLICY "admin_auth_student_photos_select" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'student-photos');
+CREATE POLICY "admin_auth_student_photos_insert" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'student-photos');
+CREATE POLICY "admin_auth_student_photos_update" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'student-photos') WITH CHECK (bucket_id = 'student-photos');
+CREATE POLICY "admin_auth_student_photos_delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'student-photos');
+
+সতর্কতা: এই policies-এ যে কোনো authenticated account-কে মাদ্রাসার তথ্য দেখার/পরিবর্তনের অনুমতি দেওয়া হয়। তাই Supabase Authentication-এ public sign-up বন্ধ রাখুন এবং শুধু বিশ্বস্ত অ্যাডমিন অ্যাকাউন্ট রাখুন। একাধিক ভূমিকা প্রয়োজন হলে আরও কঠোর role-based policy লাগবে।

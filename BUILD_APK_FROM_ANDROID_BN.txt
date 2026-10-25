@@ -1,0 +1,16 @@
+মোবাইল দিয়ে APK বানানোর সহজ পদ্ধতি (ক্লাউড বিল্ড)
+
+এই ZIP নিজে APK নয়। GitHub-এর ফ্রি Actions ব্যবহার করে APK বানানো হবে। কম্পিউটার লাগবে না, তবে GitHub অ্যাকাউন্ট লাগবে।
+
+১) এই ZIP ফোনে ডাউনলোড করুন।
+২) https://github.com/new খুলে একটি repository বানান। নাম দিন anas-bin-malik-attendance । Public বা Private—যেকোনোটি চলবে। README/License যোগ করার অপশন বন্ধ রাখুন।
+৩) নতুন repository-তে Add file > Upload files চাপুন। ZIP-টি সরাসরি নয়—আগে ফোনের Files অ্যাপ দিয়ে ZIP Extract করুন, তারপর extracted ফোল্ডারের ভেতরের সব ফাইল ও .github ফোল্ডার আপলোড করুন। .github ফোল্ডার যেন বাদ না যায়।
+৪) Commit changes চাপুন।
+৫) repository-তে Actions ট্যাব খুলুন। “Build Android APK” workflow-টি চলবে। প্রথমবার GitHub Actions চালু করতে চাইলে Enable/Allow চাপুন।
+৬) কাজ শেষ হলে সবুজ টিক চিহ্নে ঢুকুন, নিচের Artifacts অংশ থেকে anas-bin-malik-debug-apk ডাউনলোড করুন। এটি ZIP ফাইল হবে। সেটি Extract করে app-debug.apk ইনস্টল করুন।
+৭) Android যদি বাধা দেয়, Settings-এ ওই ফাইল/ব্রাউজারের জন্য “Install unknown apps” অনুমতি দিন। কেবল নিজের তৈরি APK ইনস্টল করবেন।
+
+গুরুত্বপূর্ণ:
+- Build শেষ হতে কয়েক মিনিট লাগতে পারে। ব্যর্থ হলে লাল X-সহ run খুলে শেষের error-এর screenshot পাঠান।
+- এটি debug APK; Play Store প্রকাশের জন্য signed release build নয়।
+- বাস্তব ছাত্রের তথ্য ব্যবহারের আগে Supabase Row Level Security policies ঠিকভাবে সেট ও পরীক্ষা করতে হবে। Secret/service_role key অ্যাপে দেবেন না।

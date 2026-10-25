@@ -1,0 +1,16 @@
+{
+  "name": "anas-bin-malik-attendance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "মাদ্রাসা আনাস বিন মালেক (রাঃ) QR Attendance Android app project",
+  "scripts": {
+    "build": "echo \"Web files are in www/; run npx cap sync android after Android platform setup\""
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}

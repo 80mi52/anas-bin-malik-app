@@ -1,0 +1,9 @@
+{
+  "appId": "bd.madrasa.anasbinmalik.attendance",
+  "appName": "আনাস বিন মালেক হাজিরা",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}
