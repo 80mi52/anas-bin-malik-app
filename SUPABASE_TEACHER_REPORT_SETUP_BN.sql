@@ -68,3 +68,69 @@ ON CONFLICT (user_id) DO NOTHING;
 -- গুরুত্বপূর্ণ: নিচের YOUR_ADMIN_EMAIL-কে নিজের আসল অ্যাডমিন ইমেইল দিয়ে বদলে
 -- এই UPDATE-টি আলাদাভাবে চালান। শুধু বিশ্বস্ত অ্যাকাউন্টকে admin করুন.
 -- UPDATE public.profiles SET role='admin' WHERE email='YOUR_ADMIN_EMAIL';
+
+
+-- Role-based database access: role UI-এর পাশাপাশি RLS-এও অনুমতি সীমিত করুন।
+CREATE OR REPLACE FUNCTION public.is_madrasa_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.user_id = auth.uid() AND p.role = 'admin'
+  );
+$$;
+REVOKE ALL ON FUNCTION public.is_madrasa_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_madrasa_admin() TO authenticated;
+
+-- পরিচিত পুরোনো permissive policy-গুলোকে role-based policy দিয়ে প্রতিস্থাপন।
+DROP POLICY IF EXISTS "admin_auth_students_select" ON public.students;
+DROP POLICY IF EXISTS "admin_auth_students_insert" ON public.students;
+DROP POLICY IF EXISTS "admin_auth_students_update" ON public.students;
+DROP POLICY IF EXISTS "admin_auth_students_delete" ON public.students;
+CREATE POLICY "anm_admin_students_select" ON public.students
+  FOR SELECT TO authenticated USING (public.is_madrasa_admin());
+CREATE POLICY "anm_admin_students_insert" ON public.students
+  FOR INSERT TO authenticated WITH CHECK (public.is_madrasa_admin());
+CREATE POLICY "anm_admin_students_update" ON public.students
+  FOR UPDATE TO authenticated USING (public.is_madrasa_admin()) WITH CHECK (public.is_madrasa_admin());
+CREATE POLICY "anm_admin_students_delete" ON public.students
+  FOR DELETE TO authenticated USING (public.is_madrasa_admin());
+
+DROP POLICY IF EXISTS "admin_auth_student_attendance_select" ON public.student_attendance;
+DROP POLICY IF EXISTS "admin_auth_student_attendance_insert" ON public.student_attendance;
+DROP POLICY IF EXISTS "admin_auth_student_attendance_update" ON public.student_attendance;
+DROP POLICY IF EXISTS "admin_auth_student_attendance_delete" ON public.student_attendance;
+CREATE POLICY "anm_admin_student_attendance_select" ON public.student_attendance
+  FOR SELECT TO authenticated USING (public.is_madrasa_admin());
+CREATE POLICY "anm_admin_student_attendance_insert" ON public.student_attendance
+  FOR INSERT TO authenticated WITH CHECK (public.is_madrasa_admin());
+CREATE POLICY "anm_admin_student_attendance_update" ON public.student_attendance
+  FOR UPDATE TO authenticated USING (public.is_madrasa_admin()) WITH CHECK (public.is_madrasa_admin());
+CREATE POLICY "anm_admin_student_attendance_delete" ON public.student_attendance
+  FOR DELETE TO authenticated USING (public.is_madrasa_admin());
+
+-- শিক্ষক নিজের হাজিরা দিতে ও নিজের রেকর্ড দেখতে পারবেন; অ্যাডমিন সব দেখতে পারবেন।
+DROP POLICY IF EXISTS "anm_authenticated_teacher_attendance_read" ON public.teacher_attendance;
+DROP POLICY IF EXISTS "anm_authenticated_teacher_attendance_insert" ON public.teacher_attendance;
+DROP POLICY IF EXISTS "admin_auth_teacher_attendance_select" ON public.teacher_attendance;
+DROP POLICY IF EXISTS "admin_auth_teacher_attendance_insert" ON public.teacher_attendance;
+DROP POLICY IF EXISTS "admin_auth_teacher_attendance_update" ON public.teacher_attendance;
+DROP POLICY IF EXISTS "admin_auth_teacher_attendance_delete" ON public.teacher_attendance;
+CREATE POLICY "anm_teacher_own_or_admin_read" ON public.teacher_attendance
+  FOR SELECT TO authenticated USING (teacher_id = auth.uid() OR public.is_madrasa_admin());
+CREATE POLICY "anm_teacher_own_or_admin_insert" ON public.teacher_attendance
+  FOR INSERT TO authenticated
+  WITH CHECK ((teacher_id = auth.uid() AND EXISTS (
+    SELECT 1 FROM public.profiles p WHERE p.user_id = auth.uid() AND p.role = 'teacher'
+  )) OR public.is_madrasa_admin());
+CREATE POLICY "anm_admin_teacher_attendance_update" ON public.teacher_attendance
+  FOR UPDATE TO authenticated USING (public.is_madrasa_admin()) WITH CHECK (public.is_madrasa_admin());
+CREATE POLICY "anm_admin_teacher_attendance_delete" ON public.teacher_attendance
+  FOR DELETE TO authenticated USING (public.is_madrasa_admin());
+
+-- Run order: প্রথমে SQL পুরোটা চালান; তারপর নিচের commented UPDATE-এ নিজের
+-- admin email বসিয়ে আলাদাভাবে চালান। এরপর শিক্ষক accounts profiles-এ teacher থাকবে.
