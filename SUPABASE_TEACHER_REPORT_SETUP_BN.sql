@@ -43,3 +43,28 @@ CREATE POLICY "anm_authenticated_teacher_attendance_insert"
   WITH CHECK (teacher_id = auth.uid());
 
 -- student_attendance-এর বর্তমান কাঠামো অক্ষুণ্ণ থাকে; রিপোর্ট শুধু রেকর্ড পড়ে।
+
+
+-- অ্যাডমিন/শিক্ষক লগইন ভূমিকা (role) সেটআপ
+-- profiles-এ প্রতি Supabase Auth user-এর ভূমিকা থাকবে।
+CREATE TABLE IF NOT EXISTS public.profiles (
+  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text,
+  full_name text,
+  role text NOT NULL DEFAULT 'teacher' CHECK (role IN ('admin','teacher')),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anm_profile_read_self" ON public.profiles;
+CREATE POLICY "anm_profile_read_self" ON public.profiles
+  FOR SELECT TO authenticated USING (user_id = auth.uid());
+
+-- আগে থেকে থাকা Auth users-দের profile তৈরি হবে; কাউকে admin বানানো হচ্ছে না।
+INSERT INTO public.profiles (user_id,email,full_name,role)
+SELECT id,email,COALESCE(raw_user_meta_data->>'full_name',''), 'teacher'
+FROM auth.users
+ON CONFLICT (user_id) DO NOTHING;
+
+-- গুরুত্বপূর্ণ: নিচের YOUR_ADMIN_EMAIL-কে নিজের আসল অ্যাডমিন ইমেইল দিয়ে বদলে
+-- এই UPDATE-টি আলাদাভাবে চালান। শুধু বিশ্বস্ত অ্যাকাউন্টকে admin করুন.
+-- UPDATE public.profiles SET role='admin' WHERE email='YOUR_ADMIN_EMAIL';
